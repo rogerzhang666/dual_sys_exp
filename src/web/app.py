@@ -191,6 +191,7 @@ async def get_logs(
         logs = []
         for row in db.cursor.fetchall():
             log = {
+                "session_id": row[1],  # 添加session_id字段
                 "timestamp": row[2],
                 "agent_name": row[3],
                 "input_text": row[4],
