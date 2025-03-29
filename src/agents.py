@@ -5,6 +5,7 @@ Agent实现模块
 from abc import ABC, abstractmethod  # 导入抽象基类支持
 from typing import Dict, List, Optional, Any  # 导入类型提示
 from .config import Config  # 导入配置类
+from .model_api import api  # 导入模型API
 
 class BaseAgent(ABC):
     """Agent基类，定义了所有Agent的通用接口和属性"""
@@ -45,8 +46,10 @@ class DispatcherAgent(BaseAgent):
             dialogue_history=self._format_history(dialogue_history),
             user_input=user_input
         )
-        # TODO: 调用模型API，获取决策结果
-        return "sys1"  # 临时返回，待实现模型调用
+        # 调用DeepSeek V3模型
+        response = api.call_v3(prompt)
+        # 返回"sys1"或"sys2"
+        return response.strip().lower()
 
     def _format_history(self, history: List[Dict[str, str]]) -> str:
         """格式化对话历史
@@ -77,8 +80,8 @@ class Sys1Agent(BaseAgent):
             dialogue_history=self._format_history(dialogue_history),
             user_input=user_input
         )
-        # TODO: 调用模型API，获取回复
-        return "这是sys1的回复"  # 临时返回，待实现模型调用
+        # 调用DeepSeek V3模型
+        return api.call_v3(prompt)
 
     def _format_history(self, history: List[Dict[str, str]]) -> str:
         """格式化对话历史
@@ -104,8 +107,8 @@ class Sys2Agent(BaseAgent):
             dialogue_history=self._format_history(dialogue_history),
             user_input=user_input
         )
-        # TODO: 调用模型API，获取回复
-        return "[思考过程]\n分析...\n\n[回复]\n这是sys2的回复"  # 临时返回，待实现模型调用
+        # 调用DeepSeek R1模型
+        return api.call_r1(prompt)
 
     def _format_history(self, history: List[Dict[str, str]]) -> str:
         """格式化对话历史
