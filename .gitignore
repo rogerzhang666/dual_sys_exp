@@ -20,14 +20,15 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.pyc
 
 # Virtual Environment
 venv/
 ENV/
 
 # IDE
-.idea/
 .vscode/
+.idea/
 *.swp
 *.swo
 
@@ -39,4 +40,5 @@ Thumbs.db
 *.log
 !.env.example
 .env
+*.db
 config/*.key
