@@ -27,12 +27,13 @@ class DialogueManager:
         # 从数据库加载对话历史
         self.dialogue_history = self._load_history()
         
-    def process_input(self, user_input: str) -> str:
+    def process_input(self, user_input: str) -> dict:
         """处理用户输入，返回系统回复
         Args:
             user_input: 用户输入的文本
         Returns:
-            str: 系统的回复文本
+            dict: 系统的回复信息，包含type和content字段
+                 type可能是'message'(普通回复)或'sys2'(sys2回复，包含思考过程和回复)
         """
         # 添加用户输入到对话历史
         self._add_message('用户', user_input)
@@ -44,19 +45,29 @@ class DialogueManager:
             # 根据调度结果选择相应的Agent处理
             if system.strip().lower() == 'sys1':
                 response = self.sys1.process(user_input, self.dialogue_history, self.session_id)
+                # 添加系统回复到对话历史
+                self._add_message('赵敏敏', response)
+                return {"type": "message", "content": response}
             else:
-                response = self.sys2.process(user_input, self.dialogue_history, self.session_id)
+                # 使用sys2处理
+                sys2_response = self.sys2.process(user_input, self.dialogue_history, self.session_id)
                 
-            # 添加系统回复到对话历史
-            self._add_message('赵敏敏', response)
-            
-            return response
-            
+                # 将完整回复添加到对话历史（思考过程+回复）
+                complete_response = f"{sys2_response['thinking']}\n\n{sys2_response['response']}"
+                self._add_message('赵敏敏', complete_response)
+                
+                # 返回结构化的响应
+                return {
+                    "type": "sys2", 
+                    "thinking": sys2_response["thinking"],
+                    "response": sys2_response["response"]
+                }
+                
         except Exception as e:
             error_msg = f"处理失败: {str(e)}"
             # 记录错误消息
             self._add_message('系统', error_msg)
-            return error_msg
+            return {"type": "error", "content": error_msg}
         
     def _add_message(self, role: str, content: str):
         """添加消息到对话历史

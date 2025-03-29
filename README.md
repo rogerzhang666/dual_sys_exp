@@ -17,10 +17,19 @@ dual_sys_exp/
 │   ├── agents.py            # Agent实现
 │   ├── database.py          # 数据库管理
 │   ├── dialogue_manager.py  # 对话管理
-│   └── main.py             # 主程序入口
-├── .env.example            # 环境变量模板
-├── requirements.txt        # 项目依赖
-└── README.md              # 项目说明文档
+│   ├── main.py              # 命令行界面主程序入口
+│   └── web/                 # Web应用相关文件
+│       ├── __init__.py
+│       ├── app.py           # FastAPI Web应用
+│       ├── static/          # 静态资源文件
+│       └── templates/       # HTML模板文件
+│           ├── base.html    # 基础模板
+│           ├── chat.html    # 聊天界面模板
+│           └── logs.html    # 日志查看界面模板
+├── run_web.py               # Web应用启动脚本
+├── .env.example             # 环境变量模板
+├── requirements.txt         # 项目依赖
+└── README.md                # 项目说明文档
 ```
 
 ## 系统架构
@@ -79,11 +88,16 @@ dual_sys_exp/
 - 支持对话历史持久化
 - 提供清理对话历史的功能
 
-### 6. 主程序 (main.py)
-- 提供命令行交互界面
-- 支持连续对话
-- 使用'quit'命令退出系统
-- 自动保存对话历史
+### 6. Web应用 (web/app.py)
+- 基于FastAPI开发的Web界面
+- 提供直观的聊天交互界面
+- 支持WebSocket实时通信
+- 包含系统日志查看页面
+- 提供API接口查询日志数据
+
+### 7. 主程序
+- 命令行界面 (main.py)：提供命令行交互
+- Web界面 (run_web.py)：启动Web应用服务器
 
 ## 快速开始
 
@@ -99,9 +113,17 @@ pip install -r requirements.txt
 ```
 
 3. 运行程序：
-```bash
-python src/main.py
-```
+   
+   - 命令行模式：
+   ```bash
+   python src/main.py
+   ```
+   
+   - Web界面模式：
+   ```bash
+   python run_web.py
+   ```
+   启动后访问 http://localhost:8000 即可打开Web聊天界面
 
 ## 环境要求
 
@@ -110,6 +132,11 @@ python src/main.py
   - pyyaml>=6.0.1：配置文件解析
   - python-dotenv>=1.0.0：环境变量管理
   - requests>=2.31.0：API调用
+  - fastapi>=0.110.0：Web框架
+  - uvicorn>=0.27.1：ASGI服务器
+  - jinja2>=3.1.3：HTML模板引擎
+  - websockets>=12.0：WebSocket支持
+  - 其他依赖见requirements.txt
 
 ## 配置说明
 
@@ -122,6 +149,20 @@ python src/main.py
   - sys1：短链思考Agent的配置
   - sys2：长链思考Agent的配置
 
+## Web界面功能
+
+### 聊天界面 (/chat)
+- 实时对话交互
+- 支持连续对话
+- 显示思考过程（sys2模式）
+- 自动保存对话历史
+
+### 日志界面 (/logs)
+- 查看系统运行日志
+- 支持按时间筛选
+- 支持文本搜索
+- 显示性能统计数据
+
 ## 已实现功能
 
 - [x] 基础对话功能
@@ -130,6 +171,9 @@ python src/main.py
 - [x] 系统运行日志
 - [x] Token使用统计
 - [x] 响应时间统计
+- [x] Web界面支持
+- [x] WebSocket实时通信
+- [x] 日志查询接口
 
 ## 待实现功能
 
@@ -137,7 +181,7 @@ python src/main.py
 - [ ] 错误处理和重试机制
 - [ ] 并发请求优化
 - [ ] 对话历史导出功能
-- [ ] Web界面支持
+- [ ] 移动端UI优化
 
 ## 开发说明
 

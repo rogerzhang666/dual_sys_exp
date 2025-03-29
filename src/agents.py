@@ -122,14 +122,14 @@ class Sys1Agent(BaseAgent):
 
 class Sys2Agent(BaseAgent):
     """长链思考Agent：处理需要深度思考的问题"""
-    def process(self, user_input: str, dialogue_history: List[Dict[str, str]], session_id: int) -> str:
+    def process(self, user_input: str, dialogue_history: List[Dict[str, str]], session_id: int) -> Dict[str, str]:
         """处理用户输入，生成包含思考过程的回复
         Args:
             user_input: 用户的输入文本
             dialogue_history: 对话历史记录列表
             session_id: 当前会话ID
         Returns:
-            str: 包含思考过程和回复的文本
+            Dict[str, str]: 包含思考过程和回复的字典，格式为{"thinking": "思考过程", "response": "最终回复"}
         """
         # 构建prompt，填充对话历史和用户输入
         prompt = self.prompt_template.format(
@@ -138,7 +138,14 @@ class Sys2Agent(BaseAgent):
         )
         # 调用DeepSeek R1模型并记录日志
         output = api.call_r1(prompt)
-        return self._log_api_call(session_id, prompt, output)
+        # 获取完整的文本响应
+        response_text = output[0]
+        
+        # 记录API调用信息，包括完整的输出文本
+        self._log_api_call(session_id, prompt, output)
+        
+        # 分离思考过程和最终回复
+        return self._split_response(response_text)
 
     def _format_history(self, history: List[Dict[str, str]]) -> str:
         """格式化对话历史
@@ -148,3 +155,24 @@ class Sys2Agent(BaseAgent):
             str: 格式化后的对话历史文本
         """
         return "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
+    
+    def _split_response(self, response: str) -> Dict[str, str]:
+        """分离思考过程和最终回复
+        Args:
+            response: 模型的完整回复
+        Returns:
+            Dict[str, str]: 包含思考过程和回复的字典
+        """
+        # 查找最后一段作为回复，前面的内容作为思考过程
+        parts = response.split("\n\n")
+        
+        # 如果只有一段，则将整个内容作为回复
+        if len(parts) <= 1:
+            return {"thinking": "", "response": response.strip()}
+        
+        # 最后一段作为回复
+        response_part = parts[-1].strip()
+        # 其余部分作为思考过程
+        thinking_part = "\n\n".join(parts[:-1]).strip()
+        
+        return {"thinking": thinking_part, "response": response_part}

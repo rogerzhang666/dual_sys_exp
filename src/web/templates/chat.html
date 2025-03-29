@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}对话 - 双系统实验{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        height: calc(100vh - 200px);
+    }
+    .message-list {
+        height: calc(100% - 100px);
+    }
+    .user-message {
+        background-color: #e3f2fd;
+        border-radius: 1rem 1rem 0.2rem 1rem;
+    }
+    .assistant-message {
+        background-color: #f5f5f5;
+        border-radius: 1rem 1rem 1rem 0.2rem;
+    }
+    .thinking-message {
+        background-color: #fff3e0;
+        border-radius: 1rem;
+        font-size: 0.9em;
+        color: #795548;
+        margin-bottom: 0.5rem;
+    }
+    .sys2-thinking {
+        background-color: #f3e5f5;
+        border-radius: 1rem;
+        font-size: 0.9em;
+        color: #6a1b9a;
+        margin-bottom: 0.5rem;
+    }
+    .sys2-response {
+        background-color: #e8eaf6;
+        border-radius: 1rem 1rem 1rem 0.2rem;
+    }
+    .assistant-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-4 chat-container">
+    <!-- 消息列表 -->
+    <div id="message-list" class="message-list overflow-y-auto mb-4">
+        <div class="flex items-start mb-4">
+            <img src="{{ url_for('static', path='images/jiajingwen.JPEG') }}" alt="赵敏敏" class="assistant-avatar mr-2">
+            <div class="assistant-message p-3 max-w-3xl">
+                <p class="text-gray-800">你好！我是赵敏敏，很高兴见到你。你可以问我任何问题。</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 输入区域 -->
+    <div class="border-t pt-4">
+        <form id="chat-form" class="flex items-center">
+            <input type="text" id="message-input" 
+                   class="flex-1 rounded-l-lg border border-gray-300 p-2 focus:outline-none focus:border-green-500"
+                   placeholder="输入消息..." required>
+            <button type="submit" 
+                    class="bg-green-500 text-white px-6 py-2 rounded-r-lg hover:bg-green-600 focus:outline-none">
+                发送
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 建立WebSocket连接
+    const ws = new WebSocket(`ws://${window.location.host}/ws/chat`);
+    const messageList = document.getElementById('message-list');
+    const chatForm = document.getElementById('chat-form');
+    const messageInput = document.getElementById('message-input');
+
+    // 添加消息到界面
+    function addMessage(content, type = 'message', agent = '') {
+        const div = document.createElement('div');
+        
+        if (type === 'user') {
+            div.className = 'flex items-start mb-4 justify-end';
+            div.innerHTML = `
+                <div class="user-message p-3 max-w-3xl">
+                    <p class="text-gray-800">${content}</p>
+                </div>
+            `;
+        } else if (type === 'thinking') {
+            div.className = 'flex items-start mb-2';
+            div.innerHTML = `
+                <img src="{{ url_for('static', path='images/jiajingwen.JPEG') }}" 
+                     alt="赵敏敏" class="assistant-avatar mr-2">
+                <div class="thinking-message p-3 max-w-3xl">
+                    <p class="italic">思考中：${content}</p>
+                </div>
+            `;
+        } else if (type === 'sys2-thinking') {
+            div.className = 'flex items-start mb-2';
+            div.innerHTML = `
+                <img src="{{ url_for('static', path='images/jiajingwen.JPEG') }}" 
+                     alt="赵敏敏" class="assistant-avatar mr-2">
+                <div class="sys2-thinking p-3 max-w-3xl">
+                    <p class="italic">分析过程：</p>
+                    <p class="mt-1">${content}</p>
+                </div>
+            `;
+        } else if (type === 'sys2-response') {
+            div.className = 'flex items-start mb-4';
+            div.innerHTML = `
+                <img src="{{ url_for('static', path='images/jiajingwen.JPEG') }}" 
+                     alt="赵敏敏" class="assistant-avatar mr-2">
+                <div class="sys2-response p-3 max-w-3xl">
+                    <p class="text-gray-800">${content}</p>
+                </div>
+            `;
+        } else {
+            div.className = 'flex items-start mb-4';
+            div.innerHTML = `
+                <img src="{{ url_for('static', path='images/jiajingwen.JPEG') }}" 
+                     alt="赵敏敏" class="assistant-avatar mr-2">
+                <div class="assistant-message p-3 max-w-3xl">
+                    <p class="text-gray-800">${content}</p>
+                </div>
+            `;
+        }
+        
+        messageList.appendChild(div);
+        messageList.scrollTop = messageList.scrollHeight;
+    }
+
+    // 处理表单提交
+    chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const message = messageInput.value.trim();
+        if (message) {
+            // 添加用户消息
+            addMessage(message, 'user');
+            // 发送到服务器
+            ws.send(message);
+            // 清空输入
+            messageInput.value = '';
+        }
+    });
+
+    // 处理WebSocket消息
+    ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.type === 'message') {
+            addMessage(data.content);
+        } else if (data.type === 'thinking') {
+            addMessage(data.content, 'thinking');
+        } else if (data.type === 'sys2-thinking') {
+            addMessage(data.content, 'sys2-thinking');
+        } else if (data.type === 'sys2-response') {
+            addMessage(data.content, 'sys2-response');
+        } else if (data.type === 'error') {
+            addMessage(`错误: ${data.content}`);
+        }
+    };
+
+    // 处理WebSocket错误
+    ws.onerror = (error) => {
+        console.error('WebSocket错误:', error);
+        addMessage('连接错误，请刷新页面重试。');
+    };
+
+    // 处理WebSocket关闭
+    ws.onclose = () => {
+        addMessage('连接已断开，请刷新页面重试。');
+    };
+</script>
+{% endblock %}
