@@ -22,8 +22,10 @@ class ModelAPI:
             
         # API端点配置
         self.base_url = "https://api.deepseek.com/v1"
+        self.model_v3 = "deepseek-chat"
+        self.model_r1 = "deepseek-reasoner"
         self.v3_endpoint = f"{self.base_url}/chat/completions"
-        self.r1_endpoint = f"{self.base_url}/r1/chat/completions"
+        self.r1_endpoint = f"{self.base_url}/chat/completions"
 
     def call_v3(self, prompt: str) -> str:
         """调用DeepSeek V3.0模型
@@ -32,7 +34,7 @@ class ModelAPI:
         Returns:
             str: 模型的回复文本
         """
-        return self._make_request(self.v3_endpoint, prompt)
+        return self._make_request(self.v3_endpoint, prompt, self.model_v3)
 
     def call_r1(self, prompt: str) -> str:
         """调用DeepSeek R1模型
@@ -41,13 +43,14 @@ class ModelAPI:
         Returns:
             str: 模型的回复文本
         """
-        return self._make_request(self.r1_endpoint, prompt)
+        return self._make_request(self.r1_endpoint, prompt, self.model_r1)
 
-    def _make_request(self, endpoint: str, prompt: str) -> str:
+    def _make_request(self, endpoint: str, prompt: str, model: str) -> str:
         """发送API请求
         Args:
             endpoint: API端点URL
             prompt: 输入的prompt文本
+            model: 模型名称
         Returns:
             str: 模型的回复文本
         Raises:
@@ -59,6 +62,7 @@ class ModelAPI:
         }
         
         data = {
+            "model": model,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.7,
             "max_tokens": 1000
@@ -69,6 +73,8 @@ class ModelAPI:
             response.raise_for_status()
             return response.json()['choices'][0]['message']['content']
         except Exception as e:
+            print(f"请求数据: {data}")  # 打印请求数据以便调试
+            print(f"响应内容: {response.text if 'response' in locals() else 'No response'}")  # 打印响应内容
             raise Exception(f"API调用失败: {str(e)}")
 
 # 创建全局实例

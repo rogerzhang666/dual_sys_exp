@@ -4,8 +4,8 @@ Agent实现模块
 """
 from abc import ABC, abstractmethod  # 导入抽象基类支持
 from typing import Dict, List, Optional, Any  # 导入类型提示
-from .config import Config  # 导入配置类
-from .model_api import api  # 导入模型API
+from src.config import Config  # 导入配置类
+from src.model_api import api  # 导入模型API
 
 class BaseAgent(ABC):
     """Agent基类，定义了所有Agent的通用接口和属性"""
