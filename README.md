@@ -123,7 +123,7 @@ pip install -r requirements.txt
    ```bash
    python run_web.py
    ```
-   启动后访问 http://localhost:8000 即可打开Web聊天界面
+   启动后访问 http://localhost:8001 即可打开Web聊天界面
 
 ## 环境要求
 
