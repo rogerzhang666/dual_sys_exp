@@ -163,16 +163,22 @@ class Sys2Agent(BaseAgent):
         Returns:
             Dict[str, str]: 包含思考过程和回复的字典
         """
-        # 查找最后一段作为回复，前面的内容作为思考过程
-        parts = response.split("\n\n")
-        
-        # 如果只有一段，则将整个内容作为回复
-        if len(parts) <= 1:
-            return {"thinking": "", "response": response.strip()}
-        
-        # 最后一段作为回复
-        response_part = parts[-1].strip()
-        # 其余部分作为思考过程
-        thinking_part = "\n\n".join(parts[:-1]).strip()
+        # 查找"[回复]"分隔的内容，前面是思考过程，后面是回复（包含"[回复]"）
+        if "[回复]" in response:
+            index = response.find("[回复]")
+            thinking_part = response[:index].strip()
+            response_part = response[index:].strip()  # 包含"[回复]"
+        else:
+            # 如果没有找到分隔符，则按照原来的逻辑处理
+            parts = response.split("\n\n")
+            
+            # 如果只有一段，则将整个内容作为回复
+            if len(parts) <= 1:
+                return {"thinking": "", "response": response.strip()}
+            
+            # 最后一段作为回复
+            response_part = parts[-1].strip()
+            # 其余部分作为思考过程
+            thinking_part = "\n\n".join(parts[:-1]).strip()
         
         return {"thinking": thinking_part, "response": response_part}
