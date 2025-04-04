@@ -198,23 +198,35 @@
 
     // 显示日志详情
     function showLogDetail(log) {
-        document.getElementById('modal-session').textContent = log.session_id || '无';
-        document.getElementById('modal-timestamp').textContent = formatDateTime(log.timestamp);
-        document.getElementById('modal-agent').textContent = log.agent_name;
-        document.getElementById('modal-response-time').textContent = formatResponseTime(log.response_time_ms);
-        
-        const statusEl = document.getElementById('modal-status');
-        statusEl.innerHTML = `
-            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                         ${log.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                ${log.status}
-            </span>
-        `;
-        
-        document.getElementById('modal-input').textContent = log.input_text;
-        document.getElementById('modal-output').textContent = log.output_text;
-        
-        modal.style.display = "block";
+        try {
+            document.getElementById('modal-session').textContent = log.session_id || '无';
+            document.getElementById('modal-timestamp').textContent = formatDateTime(log.timestamp);
+            document.getElementById('modal-agent').textContent = log.agent_name || '未知';
+            document.getElementById('modal-response-time').textContent = formatResponseTime(log.response_time_ms || 0);
+            
+            const statusEl = document.getElementById('modal-status');
+            statusEl.innerHTML = `
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                             ${log.status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                    ${log.status || 'unknown'}
+                </span>
+            `;
+            
+            document.getElementById('modal-input').textContent = log.input_text || '无输入';
+            
+            // 处理输出文本
+            let outputText = log.output_text || '';
+            if (typeof outputText === 'object') {
+                // 如果是对象（比如sys2的输出），格式化显示
+                outputText = JSON.stringify(outputText, null, 2);
+            }
+            document.getElementById('modal-output').textContent = outputText || '无输出';
+            
+            modal.style.display = "block";
+        } catch (error) {
+            console.error('显示日志详情时出错:', error);
+            alert('显示日志详情时出错，请检查控制台获取更多信息。');
+        }
     }
 
     // 关闭浮层

@@ -10,6 +10,9 @@ from src.database import db  # 导入数据库模块，用于存储对话历史
 class DialogueManager:
     """对话管理器：协调多个Agent的对话流程"""
     
+    # 最大对话历史长度
+    MAX_HISTORY_LENGTH = 20
+    
     def __init__(self):
         """初始化对话管理器，加载配置并创建各个Agent实例"""
         # 加载配置文件
@@ -44,28 +47,34 @@ class DialogueManager:
         
         try:
             # 使用调度器Agent决定应该使用哪个子系统来处理用户输入
-            system = self.dispatcher.process(user_input, self.dialogue_history, self.session_id)
+            system = self.dispatcher.process(user_input, self.dialogue_history[-10:], self.session_id)
             
             # 根据调度结果选择相应的Agent处理用户输入
             if system.strip().lower() == 'sys1':
                 # 如果调度结果是sys1，使用系统1处理
-                response = self.sys1.process(user_input, self.dialogue_history, self.session_id)
+                response = self.sys1.process(user_input, self.dialogue_history[-10:], self.session_id)
                 # 将系统1的回复添加到对话历史
                 self._add_message('赵敏敏', response)
                 # 返回普通消息类型的回复
                 return {"type": "message", "content": response}
             else:
                 # 如果调度结果不是sys1，则使用系统2处理
-                sys2_response = self.sys2.process(user_input, self.dialogue_history, self.session_id)
+                sys2_response = self.sys2.process(user_input, self.dialogue_history[-10:], self.session_id)
+                
+                # 检查sys2的响应是否有效
+                if not isinstance(sys2_response, dict) or not sys2_response.get('response'):
+                    error_msg = "系统2返回了无效的响应"
+                    self._add_message('系统', error_msg)
+                    return {"type": "error", "content": error_msg}
                 
                 # 将系统2的完整回复（思考过程+回复内容）添加到对话历史
-                complete_response = f"{sys2_response['thinking']}\n\n{sys2_response['response']}"
+                complete_response = f"{sys2_response.get('thinking', '')}\n\n{sys2_response['response']}"
                 self._add_message('赵敏敏', complete_response)
                 
                 # 返回结构化的系统2响应，包含思考过程和回复内容
                 return {
                     "type": "sys2", 
-                    "thinking": sys2_response["thinking"],  # 思考过程部分
+                    "thinking": sys2_response.get("thinking", ""),  # 思考过程部分（可选）
                     "response": sys2_response["response"]   # 最终回复部分
                 }
                 
@@ -89,6 +98,10 @@ class DialogueManager:
             'content': content  # 消息内容
         })
         
+        # 如果对话历史超过最大长度，移除最早的消息
+        if len(self.dialogue_history) > self.MAX_HISTORY_LENGTH:
+            self.dialogue_history.pop(0)
+        
         # 同时将消息保存到数据库中，确保持久化存储
         db.add_message(self.session_id, role, content)
         
@@ -99,13 +112,16 @@ class DialogueManager:
         """
         # 从数据库获取当前会话的所有消息
         messages = db.get_session_messages(self.session_id)
-        # 将数据库返回的消息格式转换为内部使用的格式
-        return [{'role': msg['role'], 'content': msg['content']} for msg in messages]
-        
+        # 只返回最近的MAX_HISTORY_LENGTH条消息
+        return messages[-self.MAX_HISTORY_LENGTH:]
+    
     def end_session(self):
         """结束当前会话，在数据库中标记会话已结束"""
+        # 在数据库中标记会话结束
         db.end_session(self.session_id)
+        # 清理内存中的对话历史
+        self.clear_history()
         
     def clear_history(self):
         """清空内存中的对话历史，但不影响数据库中的记录"""
-        self.dialogue_history.clear()
+        self.dialogue_history = []
