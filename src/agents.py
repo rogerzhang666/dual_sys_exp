@@ -73,8 +73,8 @@ class DispatcherAgent(BaseAgent):
             dialogue_history=self._format_history(dialogue_history),
             user_input=user_input
         )
-        # 调用DeepSeek V3模型并记录日志
-        output = api.call_v3(prompt)
+        # 调用通义意图识别模型并记录日志
+        output = api.call_intent(prompt)
         return self._log_api_call(session_id, prompt, output)
 
     def _format_history(self, history: List[Dict[str, str]]) -> str:
@@ -107,8 +107,8 @@ class Sys1Agent(BaseAgent):
             dialogue_history=self._format_history(dialogue_history),
             user_input=user_input
         )
-        # 调用DeepSeek V3模型并记录日志
-        output = api.call_v3(prompt)
+        # 调用通义千问模型并记录日志
+        output = api.call_qwen(prompt)
         return self._log_api_call(session_id, prompt, output)
 
     def _format_history(self, history: List[Dict[str, str]]) -> str:
@@ -137,7 +137,7 @@ class Sys2Agent(BaseAgent):
             user_input=user_input
         )
         # 调用DeepSeek R1模型并记录日志
-        output = api.call_r1(prompt)
+        output = api.call_deepseek(prompt)
         # 获取完整的文本响应
         response_text = output[0]
         
@@ -163,11 +163,11 @@ class Sys2Agent(BaseAgent):
         Returns:
             Dict[str, str]: 包含思考过程和回复的字典
         """
-        # 查找"[回复]"分隔的内容，前面是思考过程，后面是回复（包含"[回复]"）
+        # 查找"[回复]"分隔的内容，前面是思考过程，后面是回复
         if "[回复]" in response:
-            index = response.find("[回复]")
-            thinking_part = response[:index].strip()
-            response_part = response[index:].strip()  # 包含"[回复]"
+            parts = response.split("[回复]")
+            thinking_part = parts[0].strip()
+            response_part = parts[1].strip() if len(parts) > 1 else ""
         else:
             # 如果没有找到分隔符，则按照原来的逻辑处理
             parts = response.split("\n\n")
@@ -180,5 +180,8 @@ class Sys2Agent(BaseAgent):
             response_part = parts[-1].strip()
             # 其余部分作为思考过程
             thinking_part = "\n\n".join(parts[:-1]).strip()
-        
-        return {"thinking": thinking_part, "response": response_part}
+            
+        return {
+            "thinking": thinking_part,
+            "response": response_part
+        }

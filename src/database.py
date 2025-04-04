@@ -193,6 +193,66 @@ class Database:
             })
         return logs
         
+    def get_logs(self, start_time: Optional[str] = None,
+                end_time: Optional[str] = None,
+                search_text: Optional[str] = None) -> List[Dict[str, Any]]:
+        """获取系统日志
+        Args:
+            start_time: 开始时间（ISO格式）
+            end_time: 结束时间（ISO格式）
+            search_text: 搜索文本
+        Returns:
+            List[Dict[str, Any]]: 日志列表
+        """
+        # 构建查询条件
+        conditions = []
+        params = []
+        
+        if start_time:
+            conditions.append("l.timestamp >= ?")
+            params.append(start_time)
+            
+        if end_time:
+            conditions.append("l.timestamp <= ?")
+            params.append(end_time)
+            
+        if search_text:
+            conditions.append("(l.input_text LIKE ? OR l.output_text LIKE ?)")
+            search_pattern = f"%{search_text}%"
+            params.extend([search_pattern, search_pattern])
+            
+        # 构建SQL查询
+        query = """
+            SELECT l.*, s.start_time as session_start_time
+            FROM system_logs l
+            JOIN sessions s ON l.session_id = s.session_id
+        """
+        
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+            
+        query += " ORDER BY l.timestamp DESC LIMIT 1000"
+        
+        # 执行查询
+        self.cursor.execute(query, params)
+        logs = []
+        for row in self.cursor.fetchall():
+            logs.append({
+                'session_id': row[1],
+                'timestamp': row[2],
+                'agent_name': row[3],
+                'input_text': row[4],
+                'output_text': row[5],
+                'response_time_ms': row[6],
+                'input_tokens': row[7],
+                'output_tokens': row[8],
+                'model_name': row[9],
+                'status': row[10],
+                'error_message': row[11],
+                'session_start_time': row[12]
+            })
+        return logs
+        
     def close(self):
         """关闭数据库连接"""
         self.conn.close()

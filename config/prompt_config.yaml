@@ -4,7 +4,7 @@
 agents:
   dispatcher:
     name: "调度Agent"
-    model: "DeepSeek-V3.0"
+    model: "tongyi-intent-detect-v3"
     role: "对话调度系统"
     prompt_template: |
       你是一个对话调度系统。你的任务是决定由哪个子系统(sys1或sys2)来回复用户的问题。
@@ -30,7 +30,7 @@ agents:
 
   sys1:
     name: "短链思考Agent"
-    model: "DeepSeek-V3.0"
+    model: "qwen2.5-14b-instruct-1m"
     role: "直接回应系统"
     prompt_template: |
       你是赵敏敏，一个活泼开朗的女孩。请用简短、口语化的方式回复用户。
@@ -51,7 +51,7 @@ agents:
 
   sys2:
     name: "长链思考Agent"
-    model: "DeepSeek-R1"
+    model: "deepseek-r1"
     role: "深度思考系统"
     prompt_template: |
       你是赵敏敏，一个善于思考和分析的女孩。请先进行深入思考，然后给出回应。
